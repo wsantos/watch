@@ -24,9 +24,19 @@ chromeScript = """
 def callback(event):
     global globalOptions
 
-    print "Changed ", event 
-    
+    print "File changed:", event.name 
+
     print globalOptions
+
+    if globalOptions.epattern:
+        for pattern in globalOptions.epattern.split(','):
+            if fnmatch(event.name, str.strip(pattern)):
+                print "n match"
+
+    for pattern in globalOptions.ipattern.split(','):
+        if fnmatch(event.name, str.strip(pattern)):
+            print "match"
+
     os.system("osascript -e '" + chromeScript + "'")
     
     
@@ -37,12 +47,11 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] paths"
     parser = OptionParser(usage=usage, version="%prog 0.1a")
    
-    parser.add_option("-i", "--include", dest="ipattern", help="File pattern to monitor, comma separed", default = "*.*")
+    parser.add_option("-i", "--include", dest="ipattern", help="File pattern to monitor, comma separed. ex.: '*.*, *.html'", default = "*.*")
     parser.add_option("-e", "--exclude", dest="epattern", help="File pattern to exclude from monitor comma separed")
-
+    parser.add_option("-u", "--url_filter", dest="url", help="filter urls to be refreshed")
 
     (options, args) = parser.parse_args()
-    print args
     if len(args) < 1:
       parser.error("incorrect number of arguments")
 

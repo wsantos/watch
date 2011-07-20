@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+import os
+from fnmatch import fnmatch
+from fsevents import Observer, Stream
+from optparse import OptionParser
+
+global globalOptions
+
+chromeScript = """
+    tell application "Google Chrome"
+            set windowList to every window
+            repeat with aWindow in windowList
+                    set tabList to every tab of aWindow
+                    repeat with atab in tabList
+                            if (URL of atab contains "www") then
+                                    tell atab to reload
+                            end if
+                    end repeat
+            end repeat
+    end tell
+"""
+
+def callback(event):
+    global globalOptions
+
+    print "Changed ", event 
+    
+    print globalOptions
+    os.system("osascript -e '" + chromeScript + "'")
+    
+    
+
+if __name__ == '__main__':
+    global globalOptions
+    
+    usage = "usage: %prog [options] paths"
+    parser = OptionParser(usage=usage, version="%prog 0.1a")
+   
+    parser.add_option("-i", "--include", dest="ipattern", help="File pattern to monitor, comma separed", default = "*.*")
+    parser.add_option("-e", "--exclude", dest="epattern", help="File pattern to exclude from monitor comma separed")
+
+
+    (options, args) = parser.parse_args()
+    print args
+    if len(args) < 1:
+      parser.error("incorrect number of arguments")
+
+    
+    globalOptions = options
+    
+    try:
+        print "Start"
+        
+        observer = Observer()
+
+        stream = Stream(callback, *args, file_events=True)
+        observer.schedule(stream)
+        observer.start()
+
+        while True:
+            input()
+
+    except KeyboardInterrupt, e:
+        observer.unschedule(stream)
+        observer.stop()
+        observer.join()
+        print "Exiting..."

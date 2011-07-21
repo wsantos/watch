@@ -7,13 +7,14 @@ from optparse import OptionParser
 
 global globalOptions
 
+# Script from http://brettterpstra.com/watch-for-file-changes-and-refresh-your-browser-automatically/
 chromeScript = """
     tell application "Google Chrome"
             set windowList to every window
             repeat with aWindow in windowList
                     set tabList to every tab of aWindow
                     repeat with atab in tabList
-                            if (URL of atab contains "www") then
+                            if (URL of atab contains "%s") then
                                     tell atab to reload
                             end if
                     end repeat
@@ -24,20 +25,17 @@ chromeScript = """
 def callback(event):
     global globalOptions
 
-    print "File changed:", event.name 
-
-    print globalOptions
 
     if globalOptions.epattern:
         for pattern in globalOptions.epattern.split(','):
             if fnmatch(event.name, str.strip(pattern)):
-                print "n match"
+                print "File Changed: %s, excluded, not refreshing" % event.name
+                return
 
     for pattern in globalOptions.ipattern.split(','):
         if fnmatch(event.name, str.strip(pattern)):
-            print "match"
-
-    os.system("osascript -e '" + chromeScript + "'")
+            print "File changed: %s, refresing" % event.name
+            os.system("osascript -e '" + ((chromeScript) % globalOptions.url) + "'")
     
     
 
@@ -47,9 +45,9 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] paths"
     parser = OptionParser(usage=usage, version="%prog 0.1a")
    
-    parser.add_option("-i", "--include", dest="ipattern", help="File pattern to monitor, comma separed. ex.: '*.*, *.html'", default = "*.*")
+    parser.add_option("-i", "--include", dest="ipattern", help="File pattern to monitor, comma separed. ex.: '*.*, *.html'", default = "*")
     parser.add_option("-e", "--exclude", dest="epattern", help="File pattern to exclude from monitor comma separed")
-    parser.add_option("-u", "--url_filter", dest="url", help="filter urls to be refreshed")
+    parser.add_option("-u", "--url_filter", dest="url", help="Refresh tabs contains the pattern")
 
     (options, args) = parser.parse_args()
     if len(args) < 1:
@@ -59,7 +57,7 @@ if __name__ == '__main__':
     globalOptions = options
     
     try:
-        print "Start"
+        print "Starting..."
         
         observer = Observer()
 
